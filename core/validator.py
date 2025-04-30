@@ -16,12 +16,12 @@ class PackageValidator:
         self._validate_dataflows(package_data)
         if is_incremental:
             self.logger.info("Running inncremental package specific validations")
-            self._validate_incremental_variables(package_data)
+            self._validate_incremental_variables(package_data, sql_data)
 
     def _check_incremental(self, package_data: Dict) -> bool:
         """Check if package uses incremental loading pattern."""
         has_config_component = any(
-            re.match(r"Get.*Record.*Config.*Table", v['name'])
+            re.match(r"Get.*Config.*Table", v['name'])
             for v in package_data['structure']['components'].values()
         )
         
@@ -56,16 +56,16 @@ class PackageValidator:
         if package_data['structure']['parameters']:
             self.logger.warning("Package contains parameters which are not recommended")
 
-    def _validate_incremental_variables(self, package_data: Dict) -> None:
+    def _validate_incremental_variables(self, package_data: Dict, sql_data: Dict) -> None:
         """Validate required variables for incremental packages."""
         required_vars = {
-            'V_FullLoadQuery': None,
-            'V_IncrementalQuery': None,
-            'V_Query': None,
+            'V_FullLoadQuery': sql_data['sections'].get('V_FullLoadQuery'),
+            'V_IncrementalQuery': sql_data['sections'].get('V_IncrementalQuery'),
+            'V_Query': sql_data['sections'].get('V_Query'),
             'V_LastValue': '1900-01-01 00:00:00'
         }
         
-        variables = {v['name']: v.get('value') 
+        variables = {v['{www.microsoft.com/SqlServer/Dts}ObjectName']: v.get('{www.microsoft.com/SqlServer/Dts}Expression') 
                    for v in package_data['structure']['variables']}
 
         for var_name, expected_value in required_vars.items():
