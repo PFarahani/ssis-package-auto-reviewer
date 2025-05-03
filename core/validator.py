@@ -69,13 +69,35 @@ class PackageValidator:
                    for v in package_data['structure']['variables']}
 
         for var_name, expected_value in required_vars.items():
-            if var_name not in variables:
+            matching_keys = [key for key in variables if var_name in key]
+
+            if not matching_keys:
                 self.logger.error(f"Missing required incremental variable: {var_name}")
-            elif expected_value and variables[var_name] != expected_value:
+                continue
+
+            matching_key = matching_keys[0]
+            actual_value = variables.get(matching_key)
+
+            if (expected_value is not None and actual_value is not None):
+                variable_query_similarity = compare_texts(actual_value, expected_value)
+
+                if actual_value != expected_value:
+                    self.logger.warning(
+                        f"Variable '{var_name}' (key: {matching_key}) has unexpected value. "
+                        f"Expected: {expected_value}, Found: {actual_value}"
+                    )
+                elif variable_query_similarity != 100.0:
+                    self.logger.warning(
+                        f"Variable '{var_name}' (key: {matching_key}) has formatting deviations. "
+                        f"Similarity: {variable_query_similarity}%"
+                    )
+
+            elif expected_value and (actual_value != expected_value):
                 self.logger.warning(
                     f"Variable {var_name} has non-default value. "
-                    f"Expected: {expected_value}, Found: {variables[var_name]}"
+                    f"Expected: {expected_value}, Found: {variables.get(matching_key)}"
                 )
+
 
     def _validate_sql_consistency(self, package_data: Dict, sql_data: Dict, is_incremental: bool) -> None:
         """Validate consistency between SQL file and package."""
