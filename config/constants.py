@@ -1,11 +1,13 @@
 from pathlib import Path
 import re
+import sys
 
 # Path configurations
 BASE_DIR = Path(__file__).resolve().parent.parent
+CONFIG_DIR = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent.parent
 RESOURCES_DIR = BASE_DIR / "resources"
 ICON_PATH = RESOURCES_DIR / "favicon.ico"
-RULES_FILE = BASE_DIR / "config" / "property_rules.yml"
+RULES_FILE = CONFIG_DIR / "config" / "property_rules.yml"
 
 # Logging configurations
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -101,7 +103,7 @@ DEFAULT_YAML_COMMENTS = """\
 DEFAULT_PROPERTY_RULES = {
     'oledb_source': {
         'AlwaysUseDefaultCodePage': {'condition': 'equals', 'value': 'false'},
-        'DefaultCodePage': {'condition': 'equals', 'value': '1252'},
+        # 'DefaultCodePage': {'condition': 'equals', 'value': '1252'},
         'SqlCommand': {'condition': 'str_not_empty'},
         'SqlCommandVariable': {'condition': 'is_none'}
     },
@@ -112,7 +114,7 @@ DEFAULT_PROPERTY_RULES = {
     },
     'oledb_destination': {
         'AlwaysUseDefaultCodePage': {'condition': 'equals', 'value': 'false'},
-        'DefaultCodePage': {'condition': 'equals', 'value': '1256'},
+        # 'DefaultCodePage': {'condition': 'equals', 'value': '1256'},
         'SqlCommand': {'condition': 'is_none'},
         'FastLoadOptions': {'condition': 'is_none'}
     },
