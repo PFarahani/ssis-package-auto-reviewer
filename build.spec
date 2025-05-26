@@ -1,20 +1,25 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
-    ['PackageAutoReviewer.py'],
-    pathex=[],
+    ['main.py'],
+    pathex=['.'],
     binaries=[],
-    datas=[('favicon.ico', '.')],
+    datas=[
+        ('resources/favicon.ico', 'resources'),
+        ('config/property_rules.yml', 'config')
+    ],
     hiddenimports=['tkinter'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-	includes = ['tkinter', 'PyYAML', 'lxml'],
-    excludes=['pip', 'setuptools', 'wheel', 'distutils', 'email', 'http', 'tkinter.test', 'sqlite3', 'unittest', 'altgraph', 'packaging', 'pefile', 'pyinstaller', 'pyinstaller-hooks-contrib', 'pywin32-ctypes'],
+    includes=['tkinter', 'PyYAML', 'lxml'],
+    excludes=['pip', 'setuptools', 'wheel', 'distutils', 'email', 'http', 
+              'tkinter.test', 'sqlite3', 'unittest', 'altgraph', 'packaging', 
+              'pefile', 'pyinstaller', 'pyinstaller-hooks-contrib', 'pywin32-ctypes'],
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -36,5 +41,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['favicon.ico'],
+    icon='resources/favicon.ico',
 )

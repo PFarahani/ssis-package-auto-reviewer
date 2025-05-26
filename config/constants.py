@@ -1,0 +1,126 @@
+from pathlib import Path
+import re
+
+# Path configurations
+BASE_DIR = Path(__file__).resolve().parent.parent
+RESOURCES_DIR = BASE_DIR / "resources"
+ICON_PATH = RESOURCES_DIR / "favicon.ico"
+RULES_FILE = BASE_DIR / "config" / "property_rules.yml"
+
+# Logging configurations
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+LOG_FILENAME_FORMAT = "PackageAutoReview_{timestamp}.log"
+
+# File patterns
+SSIS_FILE_TYPES = [("SSIS Package files", "*.dtsx")]
+SQL_FILE_TYPES = [("SQL files", "*.sql")]
+
+# Validation patterns
+PACKAGE_DIMENSION_NAME_PATTERNS = [re.compile(r"^Fill_Dim\w+$")]
+PACKAGE_FACT_NAME_PATTERNS = [re.compile(r"^Fill_Fact\w+$")]
+FRAMEWORK_CONTAINERS = [
+    re.compile(r"Stage.*Initialization"),
+    re.compile(r"Extract.*Transform.*OLTP"),
+    re.compile(r"Load.*Data"),
+    re.compile(r"Update.*Config.*Table.*Insert.*Log")
+]
+
+# Specific patterns for each package type
+PACKAGE_TYPES = {
+    'DIM': {
+        'prefix': 'Fill_Dim',
+        'name_pattern': r"^Fill_Dim\w+$",
+        'expected_containers': [
+            r"Stage.*Initialization",
+            r"Extract.*Transform.*OLTP",
+            r"Load.*Data",
+            r"Update.*Config.*Table.*Insert.*Log"
+        ]
+    },
+    'FACT': {
+        'prefix': 'Fill_Fact',
+        'name_pattern': r"^Fill_Fact\w+$",
+        'expected_containers': [
+            r"Get.*Record.*Config.*Table",
+            r"Stage.*Initialization",
+            r"Extract.*Transform.*OLTP",
+            r"Load.*Data",
+            r"Update.*Config.*Table.*Insert.*Log"
+        ]
+    }
+}
+
+# Specific (extra) SQL Script components
+DYNAMIC_VALIDATION_RULES = {
+    'FACT': [
+        ('Get Last Value', r"Get.*Last.*Value for \w+"),
+        ('Get IsFullLoad Value', r"Get.*IsFullLoad.*Value"),
+        ('Update ConfigTable', r"Update.*ConfigTable")
+    ]
+}
+
+# SQL patterns
+SQL_TABLE_NAME_PATTERN = re.compile(r"Table Name:\s*(\w+)")
+SQL_SECTION_DELIMITER = re.compile(r"\-\-\-+\n")
+SQL_USE_STATEMENT = r"(?i)^\s*USE\s+.*\s*;?\s*(\n|$)"
+SQL_SECTION_HEADER = r"--(.*?)(\n|$)"
+
+# Component patterns
+COMPONENT_PATTERNS = {
+    "source": re.compile(r"^Get Data [Ff]rom \w+$"),
+    "destination": re.compile(r"^Insert [Ii]nto \w+"),
+    "hash": re.compile(r"^Multiple Hash")
+}
+
+# XML namespaces
+XML_NAMESPACES = {
+    'SQLTask': 'www.microsoft.com/sqlserver/dts/tasks/sqltask',
+    'DTS': 'www.microsoft.com/SqlServer/Dts'
+}
+
+# YAML Config
+DEFAULT_YAML_COMMENTS = """\
+# Dataflow Component Properties Rules
+#
+# This YAML file contains validation rules for dataflow pipeline components.
+# Each component type has property rules with validation conditions and expected values.
+#
+# Supported validation conditions:
+# - equals: Value must match exactly
+# - str_not_empty: Must be a non-empty string
+# - is_none: Value must be None/empty
+# - regex_match: Value must match regular expression
+#
+# Rule structure:
+# component_type:
+#   property_name:
+#     condition: validation_type
+#     value: expected_value  # (optional)
+"""
+
+DEFAULT_PROPERTY_RULES = {
+    'oledb_source': {
+        'AlwaysUseDefaultCodePage': {'condition': 'equals', 'value': 'false'},
+        'DefaultCodePage': {'condition': 'equals', 'value': '1252'},
+        'SqlCommand': {'condition': 'str_not_empty'},
+        'SqlCommandVariable': {'condition': 'is_none'}
+    },
+    'oracle_source': {
+        'DefaultCodePage': {'condition': 'equals', 'value': '1256'},
+        'SqlCommand': {'condition': 'str_not_empty'},
+        'BatchSize': {'condition': 'equals', 'value': '100000'}
+    },
+    'oledb_destination': {
+        'AlwaysUseDefaultCodePage': {'condition': 'equals', 'value': 'false'},
+        'DefaultCodePage': {'condition': 'equals', 'value': '1256'},
+        'SqlCommand': {'condition': 'is_none'},
+        'FastLoadOptions': {'condition': 'is_none'}
+    },
+    'multiple_hash': {
+        'MultipleThreads': {'condition': 'equals', 'value': '0'},
+        'SafeNullHandling': {'condition': 'equals', 'value': '1'},
+        'IncludeMillsecond': {'condition': 'equals', 'value': '1'},
+        'HashType': {'condition': 'equals', 'value': '6'},
+        'HashOutputType': {'condition': 'equals', 'value': '0'}
+    }
+}

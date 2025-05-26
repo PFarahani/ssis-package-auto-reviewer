@@ -1,0 +1,63 @@
+# Dataflow Component Properties Rules
+#
+# This YAML file contains validation rules for dataflow pipeline components.
+# Each component type has property rules with validation conditions and expected values.
+#
+# Supported validation conditions:
+# - equals: Value must match exactly
+# - str_not_empty: Must be a non-empty string
+# - is_none: Value must be None/empty
+# - regex_match: Value must match regular expression
+#
+# Rule structure:
+# component_type:
+#   property_name:
+#     condition: validation_type
+#     value: expected_value  # (optional)
+multiple_hash:
+  HashOutputType:
+    condition: equals
+    value: '0'
+  HashType:
+    condition: equals
+    value: '6'
+  IncludeMillsecond:
+    condition: equals
+    value: '1'
+  MultipleThreads:
+    condition: equals
+    value: '0'
+  SafeNullHandling:
+    condition: equals
+    value: '1'
+oledb_destination:
+  AlwaysUseDefaultCodePage:
+    condition: equals
+    value: 'false'
+  DefaultCodePage:
+    condition: equals
+    value: '1256'
+  FastLoadOptions:
+    condition: is_none
+  SqlCommand:
+    condition: is_none
+oledb_source:
+  AlwaysUseDefaultCodePage:
+    condition: equals
+    value: 'false'
+  DefaultCodePage:
+    condition: equals
+    value: '1252'
+  SqlCommand:
+    condition: str_not_empty
+  SqlCommandVariable:
+    condition: is_none
+oracle_source:
+  BatchSize:
+    condition: equals
+    value: '100000'
+  DefaultCodePage:
+    condition: equals
+    value: '1256'
+  SqlCommand:
+    condition: str_not_empty

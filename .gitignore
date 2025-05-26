@@ -1,1 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+.env
+venv/
+.venv/
+
+# Application specific
 *.log
+
+# Build artifacts
+build/
+dist/
+*.exe
