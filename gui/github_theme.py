@@ -53,7 +53,8 @@ class GitHubTheme:
         self.style.map("Accent.TButton",
                        background=[
                            ("active", "#22863a"),
-                           ("!active", "#2da44e")
+                           ("disabled", "#94a3b8"),
+                        #    ("!active", "#2da44e"),
                        ]
                        )
         # Browse button style
@@ -81,6 +82,7 @@ class GitHubTheme:
         self._configure_entries()
         self._configure_comboboxes()
         self._configure_frames()
+        self._configure_checkbuttons()
 
     def _set_base_theme(self) -> None:
         """Set base theme and background."""
@@ -194,6 +196,25 @@ class GitHubTheme:
                              insertwidth=2,
                              insertcolor=self.COLORS["fg"]
                              )
+
+    def _configure_checkbuttons(self) -> None:
+        """Style checkbutton widgets."""
+        self.style.configure("TCheckbutton",
+                            font=self.FONTS["label"],
+                            background=self.COLORS["bg"],
+                            foreground=self.COLORS["fg"],
+                            borderwidth=0,
+                            relief="flat",
+                            padding=(4, 6)
+                            )
+        self.style.map("TCheckbutton",
+                    background=[("active", self.COLORS["hover_bg"]), 
+                                ("!active", self.COLORS["bg"])],
+                    foreground=[("active", self.COLORS["fg"]),
+                                ("!active", self.COLORS["fg"])],
+                    indicatorcolor=[("selected", self.COLORS["primary"]),
+                                    ("!selected", self.COLORS["border"])]
+                    )
 
     @staticmethod
     def apply_layout(widget: ttk.Frame) -> None:
