@@ -1,7 +1,7 @@
 import os, sys
 import pyodbc
 import re
-from utils.helpers import setup_environment
+from config.env_setup import setup_environment
 
 
 class DBQueries:
