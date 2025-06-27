@@ -131,8 +131,8 @@ class SQLFileBuilder:
         # Prepare sorted table list based on sort_order
         sorted_queries = [
             query_name
-            for query_name in queries_dict
-            if any(pattern.match(query_name) for pattern in sort_order)
+            for pattern in sort_order
+            for query_name in queries_dict if pattern.match(query_name)
         ]
 
         include_null_record = (package_data['type'] == 'Dim')
