@@ -216,11 +216,11 @@ def align_column_aliases(sql: str) -> str:
         return sql
     
     # Find the maximum length of the expression part
-    max_expr_length = max(len(expr) for (i, indent, expr, alias) in alias_lines)
+    max_expr_length = max(len(indent) + len(expr) for (i, indent, expr, alias) in alias_lines)
     
     # Rebuild lines with aligned aliases
     for i, indent, expr, alias in alias_lines:
-        lines[i] = f"{indent}{expr.ljust(max_expr_length)} AS {alias}"
+        lines[i] = f"{(indent + expr).ljust(max_expr_length)} AS {alias}"
     
     return '\n'.join(lines)
 
