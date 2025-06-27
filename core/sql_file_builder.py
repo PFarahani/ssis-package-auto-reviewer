@@ -91,16 +91,18 @@ class SQLFileBuilder:
                 continue
 
             sql_query = sql_element[0].text or ""
+            access_mode = component.xpath('.//property[@name="AccessMode"]')[0].text
             try:
                 sql_query = sql_query.strip()
-                if not sql_query:
+                if (not sql_query) and (access_mode in ('1', '2')):
                     self.logger.warning(f"'SqlCommand' exists for '{name}', but it's empty. Verify the source.")
                     continue
             except Exception as e:
                 self.logger.error(f"Query extraction for '{name}' failed with error:\n{e}")
                 continue
 
-            self.sql_queries.append({name: sql_query})
+            if access_mode in ('1', '2'):
+                self.sql_queries.append({name: sql_query})
 
     def generate_sql_file(self, package_data, queries_dict, output_file_path=None, sort_order=None):
         """
