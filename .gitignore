@@ -2,12 +2,14 @@
 __pycache__/
 *.py[cod]
 .python-version
-.env
+*.env
 venv/
 .venv/
 
 # Application specific
 *.log
+*.sql
+*.zip
 
 # Build artifacts
 build/

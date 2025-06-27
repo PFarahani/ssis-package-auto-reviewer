@@ -31,4 +31,7 @@ def configure_logging() -> logging.Logger:
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
+    # Prevent duplicate log propagation
+    logger.propagate = False  
+
     return logger

@@ -1,11 +1,14 @@
 from pathlib import Path
 import re
+import sys
+from config.env_setup import DATABASE, DATABASE_STAGE
 
 # Path configurations
 BASE_DIR = Path(__file__).resolve().parent.parent
+CONFIG_DIR = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent.parent
 RESOURCES_DIR = BASE_DIR / "resources"
 ICON_PATH = RESOURCES_DIR / "favicon.ico"
-RULES_FILE = BASE_DIR / "config" / "property_rules.yml"
+RULES_FILE = CONFIG_DIR / "config" / "property_rules.yml"
 
 # Logging configurations
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -101,7 +104,7 @@ DEFAULT_YAML_COMMENTS = """\
 DEFAULT_PROPERTY_RULES = {
     'oledb_source': {
         'AlwaysUseDefaultCodePage': {'condition': 'equals', 'value': 'false'},
-        'DefaultCodePage': {'condition': 'equals', 'value': '1252'},
+        # 'DefaultCodePage': {'condition': 'equals', 'value': '1252'},
         'SqlCommand': {'condition': 'str_not_empty'},
         'SqlCommandVariable': {'condition': 'is_none'}
     },
@@ -112,7 +115,7 @@ DEFAULT_PROPERTY_RULES = {
     },
     'oledb_destination': {
         'AlwaysUseDefaultCodePage': {'condition': 'equals', 'value': 'false'},
-        'DefaultCodePage': {'condition': 'equals', 'value': '1256'},
+        # 'DefaultCodePage': {'condition': 'equals', 'value': '1256'},
         'SqlCommand': {'condition': 'is_none'},
         'FastLoadOptions': {'condition': 'is_none'}
     },
@@ -123,4 +126,42 @@ DEFAULT_PROPERTY_RULES = {
         'HashType': {'condition': 'equals', 'value': '6'},
         'HashOutputType': {'condition': 'equals', 'value': '0'}
     }
+}
+
+# SQL query mappings
+"""
+`QUERY_DB_MAP` is a dictionary of {regex_pattern:db_name} mapping regex patterns to database names, used to identify the database associated with a specific query name.
+
+IMPORTANT: The order of patterns matters. Earlier patterns take precedence over later ones in case of overlapping matches or being written in the SQL file.
+NOTE: If database name is `None`, the `USE` query will be disregarded.
+
+`QUERY_ALIAS_MAP` is a dictionary of {regex_pattern:alias} mapping regex patterns to alias names, used to replace query names with their corresponding aliases.
+
+IMPORTANT: Ensure that regex patterns match exactly between QUERY_DB_MAP and QUERY_ALIAS_MAP when adding new entries.
+"""
+DATABASE = DATABASE
+DATABASE_STAGE = DATABASE_STAGE
+
+QUERY_DB_MAP = {
+re.compile(r"^\bGet\s+Last\s+Value\s+for\s+\w+\b$", re.IGNORECASE): DATABASE,
+re.compile(r"^\bCreate\s+Table\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): DATABASE_STAGE,
+re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): None,
+re.compile(r"^V_FullLoadQuery(?:_\w+|\w*)$", re.IGNORECASE): None,
+re.compile(r"^V_IncrementalLoadQuery(?:_\w+|\w*)$", re.IGNORECASE): None,
+re.compile(r"^V_Query(?:_\w+|\w*)$", re.IGNORECASE): None,
+re.compile(r"^\bCreate\s+Clustered\s+Index\s+on\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): DATABASE_STAGE,
+re.compile(r"^\bUpdate\s+IsExists\b$", re.IGNORECASE): DATABASE_STAGE,
+re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): DATABASE_STAGE,
+re.compile(r"^\bUpdate\s+(?:Dim|Fact)(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): DATABASE,
+re.compile(r"^\bUpdate\s+ConfigTable\b$", re.IGNORECASE): DATABASE,
+re.compile(r"^\bInsert\s+PackageLog\b$", re.IGNORECASE): DATABASE,
+}
+
+QUERY_ALIAS_MAP = {
+    re.compile(r"^\bGet\s+Last\s+Value\s+for\s+\w+\b$", re.IGNORECASE): "Get Config Record",
+    re.compile(r"^\bCreate\s+Table\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): "Stage Initialization",
+    re.compile(r"^\bGet\s+(?:Record|Data)\s+[Ff]rom\s+(?!\w*Stage\b)(\w+)\b", re.IGNORECASE): "Get Record from OLTP",
+    re.compile(r"^\bCreate\s+Clustered\s+Index\s+on\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): "Create Clustered Index on Stage Table",
+    re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): "Get Data from Stage",
+    re.compile(r"^\bUpdate\s+(?:Dim|Fact)(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): "Update DW Table",
 }

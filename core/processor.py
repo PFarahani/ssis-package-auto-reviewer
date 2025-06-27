@@ -1,18 +1,15 @@
-from asyncio.log import logger
 from lxml import etree
 from typing import Dict, Any
 from pathlib import Path
 from config.constants import (
     XML_NAMESPACES,
-    PACKAGE_TYPES,
-    SQL_TABLE_NAME_PATTERN
+    PACKAGE_TYPES
 )
 from utils.helpers import (
     validate_pattern,
     get_xpath,
     detect_package_type
 )
-from utils.file_io import extract_sql_sections
 import re
 
 
@@ -92,20 +89,3 @@ class SSISProcessor:
             return [p.attrib for p in root.xpath('.//DTS:PackageParameter', namespaces=self.namespaces)]
         except AttributeError:
             return []
-
-    def process_sql(self, file_path: Path) -> Dict[str, str]:
-        """Process SQL file and validate structure."""
-        self.logger.info("Starting SQL script processing")
-        content = file_path.read_text(encoding='utf-8')
-        table_name = self._validate_sql_content(content)
-        return {
-            'table_name': table_name,
-            'sections': extract_sql_sections(content)
-        }
-
-    def _validate_sql_content(self, content: str) -> str:
-        """Validate SQL file content and extract table name."""
-        match = re.search(SQL_TABLE_NAME_PATTERN, content)
-        if not match:
-            raise ValueError("Table name not found in SQL file header")
-        return match.group(1)

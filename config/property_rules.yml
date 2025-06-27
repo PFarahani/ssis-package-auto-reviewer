@@ -34,9 +34,6 @@ oledb_destination:
   AlwaysUseDefaultCodePage:
     condition: equals
     value: 'false'
-  DefaultCodePage:
-    condition: equals
-    value: '1256'
   FastLoadOptions:
     condition: is_none
   SqlCommand:
@@ -45,9 +42,6 @@ oledb_source:
   AlwaysUseDefaultCodePage:
     condition: equals
     value: 'false'
-  DefaultCodePage:
-    condition: equals
-    value: '1252'
   SqlCommand:
     condition: str_not_empty
   SqlCommandVariable:
