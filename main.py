@@ -104,15 +104,16 @@ class PackageAutoReview:
             finally:
                 self.logger.info(f"Dataflow analysis process ended")
             
-            # Build SQL file
-            self.logger.info("Starting SQL file generation...")
-            try:
-                self._sql_file_builder(package_data)
-                self.logger.info("SQL file generation completed successfully")
-            except Exception as e:
-                self.logger.error(f"SQL file generation failed: {e}")
-            finally:
-                self.logger.info(f"SQL file generation process ended")
+            if self.file_dialog.generate_sql:
+                # Build SQL file
+                self.logger.info("Starting SQL file generation...")
+                try:
+                    self._sql_file_builder(package_data)
+                    self.logger.info("SQL file generation completed successfully")
+                except Exception as e:
+                    self.logger.error(f"SQL file generation failed: {e}")
+                finally:
+                    self.logger.info(f"SQL file generation process ended")
         except Exception as e:
             self.logger.error(f"Workflow failed: {e}")
         finally:

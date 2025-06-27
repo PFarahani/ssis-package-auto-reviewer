@@ -22,6 +22,7 @@ class FileDialog:
         self.sql_path: Optional[Path] = None
         self.ssis_path: Optional[Path] = None
         self.log_level = "WARNING"
+        self.generate_sql = True
         self._create_widgets()
         self.analysis_running = False
 
@@ -204,6 +205,7 @@ class FileDialog:
         """Handle form submission and set log level."""
         self.package_type = self.pkg_combobox.get()
         self.log_level = self.log_combobox.get()
+        self.generate_sql = self.generate_sql_var.get()
         self.logger.setLevel(self.log_level.upper())
 
         # Custom handler for GUI logging
