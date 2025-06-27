@@ -14,17 +14,24 @@ class GitHubTheme:
     COLORS = {
         "bg": "#ffffff",
         "fg": "#24292f",
+        "fg-0.75": "#5b5f63",
         "primary": "#0969da",
         "border": "#d0d7de",
         "hover_bg": "#f6f8fa",
         "active_bg": "#0969da",
-        "active_fg": "#ffffff"
+        "active_bg_tint": "#2178dd",
+        "active_bg_shade": "#085fc4",
+        "active_fg": "#ffffff",
+        "accent_bg": "#2da44e",
+        "accent_bg_shade": "#22863a",
+        "disabled_bg": "#94a3b8",
+        "disabled_fg": "#ffffff",
     }
 
     # Typography
     FONTS = {
         "default": ("Segoe UI", 10),
-        "title": ("Segoe UI", 14, "bold"),
+        "title": ("Segoe UI", 16, "bold"),
         "label": ("Segoe UI", 10),
         "button": ("Segoe UI", 10, "bold")
     }
@@ -40,24 +47,74 @@ class GitHubTheme:
         self.root = root
         self.style = ttk.Style()
         self._configure_theme()
-        # Accent button style
-        self.style.configure("Accent.TButton",
-                             background="#2da44e",
-                             foreground="#ffffff",
+
+    def _configure_theme(self) -> None:
+        """Configure all widget styles."""
+        self._set_base_theme()
+        self._configure_labels()
+        self._configure_labelframes()
+        self._configure_buttons()
+        self._configure_accent_buttons()
+        self._configure_browse_buttons()
+        self._configure_entries()
+        self._configure_comboboxes()
+        self._configure_frames()
+        self._configure_checkbuttons()
+        self._configure_text_widgets()
+
+    def _set_base_theme(self) -> None:
+        """Set base theme and background."""
+        self.root.configure(bg=self.COLORS["bg"])
+        self.style.theme_use("clam")
+
+    def _configure_labels(self) -> None:
+        """Style labels."""
+        self.style.configure("TLabel",
+                             font=self.FONTS["label"],
+                             background=self.COLORS["bg"],
+                             foreground=self.COLORS["fg-0.75"],
+                             )
+
+    def _configure_buttons(self) -> None:
+        """Style buttons with GitHub's primary color scheme."""
+        self.style.configure("TButton",
+                             font=self.FONTS["button"],
+                             background=self.COLORS["primary"],
+                             foreground=self.COLORS['active_fg'],
                              borderwidth=0,
                              padding=self.SPACING["padding"],
-                             relief="flat",
-                             focusthickness=0,
-                             focuscolor=self.COLORS["bg"]
+                             relief="flat"
+                             )
+        self.style.map("TButton",
+                       background=[
+                           ("active", self.COLORS["active_bg_tint"]),
+                           ("!active", self.COLORS["active_bg"])
+                       ],
+                       foreground=[
+                           ("active", self.COLORS["active_fg"]),
+                           ("!active", self.COLORS["disabled_fg"])
+                       ]
+                       )
+
+    def _configure_accent_buttons(self) -> None:
+        """Style accent buttons."""
+        self.style.configure("Accent.TButton",
+                             font=self.FONTS["button"],
+                             background=self.COLORS['accent_bg'],
+                             foreground=self.COLORS['active_fg'],
+                             borderwidth=0,
+                             padding=self.SPACING["padding"],
+                             relief="flat"
                              )
         self.style.map("Accent.TButton",
                        background=[
-                           ("active", "#22863a"),
-                           ("disabled", "#94a3b8"),
-                        #    ("!active", "#2da44e"),
+                           ("active", self.COLORS['accent_bg_shade']),
+                           ("disabled", self.COLORS['disabled_bg']),
                        ]
                        )
-        # Browse button style
+
+    def _configure_browse_buttons(self) -> None:
+        """Style browse buttons.""" 
         self.style.configure("Browse.TButton",
                              font=self.FONTS["button"],
                              background=self.COLORS["border"],
@@ -71,50 +128,6 @@ class GitHubTheme:
                        background=[
                            ("active", self.COLORS["hover_bg"]),
                            ("!active", self.COLORS["border"])
-                       ]
-                       )
-
-    def _configure_theme(self) -> None:
-        """Configure all widget styles."""
-        self._set_base_theme()
-        self._configure_labels()
-        self._configure_buttons()
-        self._configure_entries()
-        self._configure_comboboxes()
-        self._configure_frames()
-        self._configure_checkbuttons()
-
-    def _set_base_theme(self) -> None:
-        """Set base theme and background."""
-        self.root.configure(bg=self.COLORS["bg"])
-        self.style.theme_use("clam")
-
-    def _configure_labels(self) -> None:
-        """Style labels."""
-        self.style.configure("TLabel",
-                             font=self.FONTS["label"],
-                             background=self.COLORS["bg"],
-                             foreground=self.COLORS["fg"]
-                             )
-
-    def _configure_buttons(self) -> None:
-        """Style buttons with GitHub's primary color scheme."""
-        self.style.configure("TButton",
-                             font=self.FONTS["button"],
-                             background=self.COLORS["primary"],
-                             foreground="#ffffff",
-                             borderwidth=0,
-                             padding=self.SPACING["padding"],
-                             relief="flat"
-                             )
-        self.style.map("TButton",
-                       background=[
-                           ("active", self.COLORS["active_bg"]),
-                           ("!active", self.COLORS["primary"])
-                       ],
-                       foreground=[
-                           ("active", self.COLORS["active_fg"]),
-                           ("!active", "#ffffff")
                        ]
                        )
 
@@ -141,7 +154,7 @@ class GitHubTheme:
         """Style combobox widgets."""
         self.style.configure("TCombobox",
                              selectbackground=self.COLORS["primary"],
-                             selectforeground="#ffffff",
+                             selectforeground=self.COLORS['active_fg'],
                              fieldbackground=self.COLORS["bg"],
                              background=self.COLORS["bg"],
                              arrowsize=12,
@@ -164,39 +177,6 @@ class GitHubTheme:
                              relief="flat"
                              )
 
-    def _configure_comboboxes(self) -> None:
-        """Style combobox widgets with GitHub's dropdown appearance."""
-        self.style.configure("TCombobox",
-                             selectbackground=self.COLORS["primary"],
-                             selectforeground="#ffffff",
-                             fieldbackground=self.COLORS["bg"],
-                             background=self.COLORS["bg"],
-                             arrowsize=12,
-                             arrowcolor=self.COLORS["fg"],
-                             padding=(8, 6)
-                             )
-        self.style.map("TCombobox",
-                       fieldbackground=[("readonly", self.COLORS["bg"])],
-                       background=[("readonly", self.COLORS["bg"])],
-                       bordercolor=[
-                           ("focus", self.COLORS["primary"]),
-                           ("!focus", self.COLORS["border"])
-                       ]
-                       )
-
-    def _configure_entries(self) -> None:
-        """Style entry widgets with GitHub's input field appearance."""
-        self.style.configure("TEntry",
-                             fieldbackground=self.COLORS["bg"],
-                             foreground=self.COLORS["fg"],
-                             bordercolor=self.COLORS["border"],
-                             lightcolor=self.COLORS["border"],
-                             darkcolor=self.COLORS["border"],
-                             padding=(8, 6),
-                             insertwidth=2,
-                             insertcolor=self.COLORS["fg"]
-                             )
-
     def _configure_checkbuttons(self) -> None:
         """Style checkbutton widgets."""
         self.style.configure("TCheckbutton",
@@ -215,6 +195,46 @@ class GitHubTheme:
                     indicatorcolor=[("selected", self.COLORS["primary"]),
                                     ("!selected", self.COLORS["border"])]
                     )
+
+    def _configure_text_widgets(self) -> None:
+        """Style text widgets."""
+        self.style.configure("Text",
+                            background=self.COLORS["bg"],
+                            foreground=self.COLORS["fg"],
+                            insertbackground=self.COLORS["fg"],
+                            selectbackground=self.COLORS["primary"],
+                            selectforeground=self.COLORS['active_fg'],
+                            relief="solid",
+                            borderwidth=1,
+                            font=self.FONTS["default"],
+                            padding=self.SPACING["input_padding"]
+                            )
+        self.style.map("Text",
+                       bordercolor=[
+                           ("focus", self.COLORS["primary"]),
+                           ("!focus", self.COLORS["border"])
+                       ]
+                       )
+
+    def _configure_labelframes(self) -> None:
+        """Style ttk.LabelFrame."""
+        # Outer box
+        self.style.configure(
+            "TLabelframe",
+            background=self.COLORS["bg"],
+            bordercolor=self.COLORS["border"],
+            borderwidth=1,
+            relief="solid",
+            padding=4,
+        )
+        # The "title" label that sits in the border
+        self.style.configure(
+            "TLabelframe.Label",
+            background=self.COLORS["bg"],
+            foreground=self.COLORS["fg-0.75"],
+            font=self.FONTS["label"],
+            padding=(4, 6),
+        )
 
     @staticmethod
     def apply_layout(widget: ttk.Frame) -> None:

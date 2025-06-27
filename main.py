@@ -52,7 +52,10 @@ class PackageAutoReview:
         """Main execution flow."""
         try:
             self.initialize()
-            self._main_workflow()
+            # Pass control to GUI
+            self.file_dialog.set_analysis_callback(self._main_workflow)
+            self.file_dialog.mainloop()
+
         except KeyboardInterrupt:
             self.logger.info("Operation cancelled by user")
             sys.exit(1)
@@ -64,51 +67,58 @@ class PackageAutoReview:
 
     def _main_workflow(self) -> None:
         """Core application workflow."""
-        # Get package type first
-        package_type = self.file_dialog.get_package_type()
-
-        # File selection
-        ssis_path = self.file_dialog.get_ssis_path()
-
-        if not ssis_path:
-            self.logger.error("File selection cancelled")
-            return
-
-        # Data processing
-        package_data = self.processor.process_package(ssis_path)
-        if package_data['type'] != package_type:
-            self.logger.warning(f"Package type mismatch: Expected {package_type}, got {package_data['type']}")
-            return
-
-        # Validation
-        self.logger.info("Starting package validation...")
         try:
-            self.validator.validate(package_data)
-            self.logger.info("Package validation completed successfully")
-        except Exception as e:
-            self.logger.error(f"Package validation failed: {e}")
-        finally:
-            self.logger.info(f"Package validation process ended")
+            # Get package type first
+            package_type = self.file_dialog.get_package_type()
 
-        # Dataflow analysis
-        self.logger.info("Starting dataflow analysis...")
-        try:
-            self._analyze_dataflows(package_data)
-            self.logger.info("Dataflow analysis completed successfully")
+            # File selection
+            ssis_path = self.file_dialog.get_ssis_path()
+
+            if not ssis_path:
+                self.logger.error("File selection cancelled")
+                return
+
+            # Data processing
+            package_data = self.processor.process_package(ssis_path)
+            if package_data['type'] != package_type:
+                self.logger.warning(f"Package type mismatch: Expected {package_type}, got {package_data['type']}")
+                return
+
+            # Validation
+            self.logger.info("Starting package validation...")
+            try:
+                self.validator.validate(package_data)
+                self.logger.info("Package validation completed successfully")
+            except Exception as e:
+                self.logger.error(f"Package validation failed: {e}")
+            finally:
+                self.logger.info(f"Package validation process ended")
+
+            # Dataflow analysis
+            self.logger.info("Starting dataflow analysis...")
+            try:
+                self._analyze_dataflows(package_data)
+                self.logger.info("Dataflow analysis completed successfully")
+            except Exception as e:
+                self.logger.error(f"Dataflow analysis failed: {e}")
+            finally:
+                self.logger.info(f"Dataflow analysis process ended")
+            
+            # Build SQL file
+            self.logger.info("Starting SQL file generation...")
+            try:
+                self._sql_file_builder(package_data)
+                self.logger.info("SQL file generation completed successfully")
+            except Exception as e:
+                self.logger.error(f"SQL file generation failed: {e}")
+            finally:
+                self.logger.info(f"SQL file generation process ended")
         except Exception as e:
-            self.logger.error(f"Dataflow analysis failed: {e}")
+            self.logger.error(f"Workflow failed: {e}")
         finally:
-            self.logger.info(f"Dataflow analysis process ended")
-        
-        # Build SQL file
-        self.logger.info("Starting SQL file generation...")
-        try:
-            self._sql_file_builder(package_data)
-            self.logger.info("SQL file generation completed successfully")
-        except Exception as e:
-            self.logger.error(f"SQL file generation failed: {e}")
-        finally:
-            self.logger.info(f"SQL file generation process ended")
+            # Analysis complete - GUI remains open
+            pass
+
 
     def _analyze_dataflows(self, package_data: dict) -> None:
         """Analyze all dataflows in the package."""
@@ -177,4 +187,3 @@ class PackageAutoReview:
 if __name__ == "__main__":
     app = PackageAutoReview()
     app.run()
-    input("Press ENTER to continue")
