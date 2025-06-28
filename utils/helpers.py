@@ -110,7 +110,7 @@ def beautify_sql_query(
             return formatted
 
         output = []
-        for statement in parsed:
+        for statement in filter(lambda s: s.value.strip() != 'GO', parsed):
             tokens = [t for t in statement.tokens if not t.is_whitespace]
             if not tokens:
                 output.append(statement.value)
@@ -149,7 +149,7 @@ def format_create_table(sql: str) -> str:
         return sql
     
     prefix = sql[:start_idx+1]  # includes '('
-    suffix = sql[end_idx:]       # includes ')' and anything after
+    suffix = sql[end_idx:].strip(' \nGO')  # includes ')' and anything after
     inner = sql[start_idx+1:end_idx]
     
     # Split column definitions while respecting inner parentheses
@@ -171,7 +171,7 @@ def format_create_table(sql: str) -> str:
         columns.append(last_col)
     
     if not columns:
-        return prefix + " " + suffix    # Empty DDL
+        return prefix + " " + suffix + "\nGO"   # Empty DDL
 
     # Extract column names and definitions
     col_data = []
@@ -191,7 +191,7 @@ def format_create_table(sql: str) -> str:
         formatted_cols.append(f"    {name.ljust(max_name_len)} {definition}{comma}")
     
     # Reassemble the SQL statement
-    return f"{prefix}\n" + "\n".join(formatted_cols) + f"\n{suffix}"
+    return f"{prefix}\n" + "\n".join(formatted_cols) + suffix + "\nGO"
 
 
 def align_column_aliases(sql: str) -> str:

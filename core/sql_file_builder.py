@@ -143,12 +143,19 @@ class SQLFileBuilder:
 
         try:
             # Fetch table creation DDL
+            sql_lines.append("/*")
+            sql_lines.append(f"Table Name: {package_data['metadata'].get('table_name')}")
+            sql_lines.append(f"Creation Date: {package_data['metadata'].get('creation_date')}")
+            sql_lines.append(f"Creator Name: {package_data['metadata'].get('creator_name')}")
+            sql_lines.append("*/")
+            sql_lines.append("\n")
+
             self.logger.info("Fetching table creation DDL...")
-            ddl_statements = self.db_queries.get_table_definition(table=package_data['metadata'].get('name'), schema='dbo') or ""
+            ddl_statements = self.db_queries.get_table_definition(table=package_data['metadata'].get('table_name'), schema='dbo') or ""
             sql_lines.append("---------------------------------------------------------------------------")
             sql_lines.append("-- Create DW Table")
             sql_lines.append(f"USE {self.datawarehouse}\nGO\n")
-            sql_lines.append(ddl_statements)
+            sql_lines.append(beautify_sql_query(ddl_statements))
             sql_lines.append("\n")
             self.logger.info("Table creation DDL insertion completed")
 
@@ -171,7 +178,7 @@ class SQLFileBuilder:
                 self.logger.info(f"Checking the existence of Null record insertion query...")
                 with open(self.insert_null_script_path, 'r', encoding='utf-16') as f:
                     insull_sql_content = f.read()
-                table_name = package_data['metadata'].get('name').strip("Fill_")
+                table_name = package_data['metadata'].get('table_name')
                 insert_null_query = self.db_queries.find_insert_statement(self, insull_sql_content, table_name)
                 if insert_null_query:
                     sql_lines.append("---------------------------------------------------------------------------")

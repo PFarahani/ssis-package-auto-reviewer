@@ -1,5 +1,6 @@
 from lxml import etree
 from typing import Dict, Any
+from datetime import datetime
 from pathlib import Path
 from config.constants import (
     XML_NAMESPACES,
@@ -39,8 +40,10 @@ class SSISProcessor:
         """Extract core package metadata."""
         metadata = {
             'name': get_xpath(root, '@DTS:ObjectName', self.namespaces),
+            'table_name': get_xpath(root, '@DTS:ObjectName', self.namespaces).removeprefix("Fill_"),
             'version': get_xpath(root, '@DTS:VersionMajor', self.namespaces),
-            'creation_date': get_xpath(root, '@DTS:CreationDate', self.namespaces)
+            'creation_date': datetime.strptime(get_xpath(root, '@DTS:CreationDate', self.namespaces), '%m/%d/%Y %I:%M:%S %p').strftime('%Y-%m-%d %H:%M:%S'),
+            'creator_name': get_xpath(root, '@DTS:CreatorName', self.namespaces).split("\\")[-1]
         }
 
         self.logger.info("Validating package name")

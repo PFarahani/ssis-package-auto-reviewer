@@ -54,6 +54,8 @@ class DBQueries:
             f"PWD={password};"
         )
 
+        table = table.removeprefix('Fill_')
+
         try:
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
@@ -63,7 +65,7 @@ class DBQueries:
             SELECT
                 t.name                                                                            AS TableName,
                 c.name                                                                            AS ColumnName,
-                ty.name                                                                           AS DataType,
+                UPPER(ty.name)                                                                    AS DataType,
                 CASE
                     WHEN ty.name IN ('nvarchar', 'nchar') THEN c.max_length / 2
                     WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') THEN c.max_length
@@ -81,7 +83,7 @@ class DBQueries:
                                                 ON kc.parent_object_id = pk.object_id AND kc.unique_index_id = pk.index_id
                                         INNER JOIN sys.index_columns ic_pk
                                                 ON pk.object_id = ic_pk.object_id AND pk.index_id = ic_pk.index_id
-                            WHERE kc.type = 'PK' -- Primary Key constraint
+                            WHERE kc.type = 'PK'
                                 AND ic_pk.object_id = c.object_id
                                 AND ic_pk.column_id = c.column_id), CAST(1 AS BIT), CAST(0 AS BIT)) AS IsPrimaryKey,
                 p.data_compression_desc                                                           AS DataCompression,
@@ -138,8 +140,7 @@ class DBQueries:
             )
             # Find the matching DataCompression for the primary key
             pk_data_compression = next(
-                (row[9] for row in columns if row[7]
-                == 'NONCLUSTERED' and row[8] == True),
+                (row[9] for row in columns if row[7] == 'NONCLUSTERED' and row[8] == True),
                 None
             )
 
@@ -159,7 +160,7 @@ class DBQueries:
                                                 ON kc.parent_object_id = pk.object_id AND kc.unique_index_id = pk.index_id
                                         INNER JOIN sys.index_columns ic_pk
                                                 ON pk.object_id = ic_pk.object_id AND pk.index_id = ic_pk.index_id
-                            WHERE kc.type = 'PK' -- Primary Key constraint
+                            WHERE kc.type = 'PK'
                                 AND ic_pk.object_id = c.object_id
                                 AND ic_pk.column_id = c.column_id), CAST(1 AS BIT), CAST(0 AS BIT))  AS IsPrimaryKey,
                 p.data_compression_desc                                                              AS DataCompression,
@@ -177,12 +178,17 @@ class DBQueries:
             GROUP BY i.name, i.type_desc, p.data_compression_desc, c.object_id, c.column_id, fg.name
             """)
 
-            for idx in cursor.fetchall():
+            indexes = cursor.fetchall()
+            found_non_pk = False
+            for idx in indexes:
                 if not idx.IsPrimaryKey:
+                    found_non_pk = True
                     ddl += f"\nGO\nCREATE {idx.IndexType} INDEX [{idx.IndexName}] ON [{schema}].[{table}] ({idx.KeyColumns})"
                     ddl += f" WITH (DATA_COMPRESSION = {idx.DataCompression})" if idx.DataCompression else ""
                     ddl += f" ON {idx.FileGroupName}" if idx.FileGroupName else ""
                     ddl += "\nGO\n"
+            if not found_non_pk:
+                self.logger.warning(f"Skipped scripting indexes: no eligible indexes found (excluding primary key)")
             return ddl
 
         except pyodbc.Error as e:
