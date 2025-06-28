@@ -1,7 +1,72 @@
 from pathlib import Path
 import re
 import sys
-from config.env_setup import DATABASE, DATABASE_STAGE
+from os import getenv
+
+class _DatabaseConfig:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if not self._initialized:
+            self._database = None
+            self._database_stage = None
+            self._initialized = True
+
+    @property
+    def DATABASE(self):
+        if self._database is None:
+            self._load_env_vars()
+        return self._database
+
+    @property
+    def DATABASE_STAGE(self):
+        if self._database_stage is None:
+            self._load_env_vars()
+        return self._database_stage
+
+    @property
+    def QUERY_DB_MAP(self):
+        """Lazily evaluated mapping that uses current DB values"""
+        if not self._initialized:
+            raise RuntimeError("Database config not initialized")
+        return {
+            re.compile(r"^\bGet\s+Last\s+Value\s+for\s+\w+\b$", re.IGNORECASE): self._database,
+            re.compile(r"^\bCreate\s+Table\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): self._database_stage,
+            re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): None,
+            re.compile(r"^V_FullLoadQuery(?:_\w+|\w*)$", re.IGNORECASE): None,
+            re.compile(r"^V_IncrementalLoadQuery(?:_\w+|\w*)$", re.IGNORECASE): None,
+            re.compile(r"^V_Query(?:_\w+|\w*)$", re.IGNORECASE): None,
+            re.compile(r"^\bCreate\s+Clustered\s+Index\s+on\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): self._database_stage,
+            re.compile(r"^\bUpdate\s+IsExists\b$", re.IGNORECASE): self._database_stage,
+            re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): self._database_stage,
+            re.compile(r"^\bUpdate\s+(?:Dim|Fact)(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): self._database,
+            re.compile(r"^\bUpdate\s+ConfigTable\b$", re.IGNORECASE): self._database,
+            re.compile(r"^\bInsert\s+PackageLog\b$", re.IGNORECASE): self._database,
+            }
+
+    def _load_env_vars(self):
+        """Load environment variables when first accessed"""
+        self._database = getenv('SQL_DATABASE')
+        self._database_stage = getenv('SQL_DATABASE_STAGE')
+
+def init_environment(logger=None):
+    """
+    Initialize environment variables after GUI is ready
+    Should be called from FileDialog.__init__ after GUI setup
+    
+    Args:
+        logger: Optional logger instance for error reporting
+    """
+    from config.env_setup import setup_environment
+    if not setup_environment(logger=logger):
+        if logger:
+            logger.error("Environment setup failed - some database features may not work")
 
 # Path configurations
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -139,23 +204,11 @@ NOTE: If database name is `None`, the `USE` query will be disregarded.
 
 IMPORTANT: Ensure that regex patterns match exactly between QUERY_DB_MAP and QUERY_ALIAS_MAP when adding new entries.
 """
-DATABASE = DATABASE
-DATABASE_STAGE = DATABASE_STAGE
-
-QUERY_DB_MAP = {
-re.compile(r"^\bGet\s+Last\s+Value\s+for\s+\w+\b$", re.IGNORECASE): DATABASE,
-re.compile(r"^\bCreate\s+Table\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): DATABASE_STAGE,
-re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): None,
-re.compile(r"^V_FullLoadQuery(?:_\w+|\w*)$", re.IGNORECASE): None,
-re.compile(r"^V_IncrementalLoadQuery(?:_\w+|\w*)$", re.IGNORECASE): None,
-re.compile(r"^V_Query(?:_\w+|\w*)$", re.IGNORECASE): None,
-re.compile(r"^\bCreate\s+Clustered\s+Index\s+on\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): DATABASE_STAGE,
-re.compile(r"^\bUpdate\s+IsExists\b$", re.IGNORECASE): DATABASE_STAGE,
-re.compile(r"^\bGet\s+(?:Record|Data)\s+from\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): DATABASE_STAGE,
-re.compile(r"^\bUpdate\s+(?:Dim|Fact)(?!\w*Stage\b)(\w+)\b$", re.IGNORECASE): DATABASE,
-re.compile(r"^\bUpdate\s+ConfigTable\b$", re.IGNORECASE): DATABASE,
-re.compile(r"^\bInsert\s+PackageLog\b$", re.IGNORECASE): DATABASE,
-}
+# Singleton instance
+db_config = _DatabaseConfig()
+DATABASE = db_config.DATABASE
+DATABASE_STAGE = db_config.DATABASE_STAGE
+QUERY_DB_MAP = db_config.QUERY_DB_MAP
 
 QUERY_ALIAS_MAP = {
     re.compile(r"^\bGet\s+Last\s+Value\s+for\s+\w+\b$", re.IGNORECASE): "Get Config Record",

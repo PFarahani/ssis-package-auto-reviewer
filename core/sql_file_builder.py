@@ -3,9 +3,8 @@ from typing import Dict, Optional
 from utils.helpers import get_xpath, beautify_sql_query
 from config.constants import (
     XML_NAMESPACES,
-    QUERY_DB_MAP,
     QUERY_ALIAS_MAP,
-    DATABASE
+    db_config
 )
 from core.db_queries import DBQueries
 
@@ -14,10 +13,10 @@ class SQLFileBuilder:
     def __init__(self, logger, db_queries: Optional[DBQueries] = None) -> None:
         self.logger = logger
         self.namespaces = XML_NAMESPACES
-        self.query_db_map = QUERY_DB_MAP
+        self.query_db_map = db_config.QUERY_DB_MAP
         self.query_alias_map = QUERY_ALIAS_MAP
         self.db_queries = db_queries or DBQueries(self.logger)
-        self.datawarehouse = DATABASE
+        self.datawarehouse = db_config.DATABASE
         self.insert_null_script_path = None
         self.sql_queries = []
 

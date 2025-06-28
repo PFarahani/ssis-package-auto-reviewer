@@ -26,6 +26,15 @@ class FileDialog:
         self._create_widgets()
         self.analysis_running = False
 
+    def _delayed_env_init(self):
+        """Initialize environment after GUI is fully running"""
+        from config.constants import db_config
+        try:
+            db_config.initialize(logger=self.logger)
+            self.logger.info("Database configuration loaded")
+        except Exception as e:
+            self.logger.error(f"Database init failed: {str(e)}")
+
     def _initialize_root(self) -> tk.Tk:
         """Create and configure the root Tkinter window."""
         root = tk.Tk()
@@ -260,20 +269,24 @@ class FileDialog:
 
     def _start_analysis(self) -> None:
         """Start analysis in a separate thread."""
-        self.analysis_running = True
-        self.run_analysis_button.config(state="disabled")
-        self.close_button.config(state="disabled")
-        self.log_viewer.config(state='normal')
-        self.log_viewer.delete(1.0, tk.END)
-        self.log_viewer.insert(tk.END, "Starting analysis...\n")
-        self.log_viewer.config(state='disabled')
-        
-        # Start analysis in separate thread
-        analysis_thread = threading.Thread(target=self._on_submit, daemon=True)
-        analysis_thread.start()
-        
-        # Check thread status periodically
-        self.root.after(100, self._check_analysis_status, analysis_thread)
+        try:
+            self.analysis_running = True
+            self.run_analysis_button.config(state="disabled")
+            self.close_button.config(state="disabled")
+            self.log_viewer.config(state='normal')
+            self.log_viewer.delete(1.0, tk.END)
+            self.log_viewer.insert(tk.END, "Starting analysis...\n")
+            self.log_viewer.config(state='disabled')
+            
+            # Start analysis in separate thread
+            analysis_thread = threading.Thread(target=self._on_submit, daemon=True)
+            analysis_thread.start()
+            
+            # Check thread status periodically
+            self.root.after(100, self._check_analysis_status, analysis_thread)
+        except Exception as e:
+            self.logger.exception(f"Failed to start analysis: {e}")
+            self._reset_buttons()
 
     def _check_analysis_status(self, thread: threading.Thread) -> None:
         """Check if analysis thread has completed."""
@@ -281,10 +294,12 @@ class FileDialog:
             self.root.after(100, self._check_analysis_status, thread)
         else:
             self.analysis_running = False
-            self.close_button.config(state="normal")
-            self.log_viewer.config(state='normal')
-            self.log_viewer.insert(tk.END, "\nAnalysis completed!\n")
-            self.log_viewer.config(state='disabled')
+            self.append_log("\nAnalysis completed!\n")
+
+    def _reset_buttons(self) -> None:
+        """Re-enable UI buttons after analysis completes."""
+        self.run_analysis_button.config(state="normal")
+        self.close_button.config(state="normal")
 
     def _on_close(self) -> None:
         """Handle close button click."""

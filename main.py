@@ -39,14 +39,19 @@ class PackageAutoReview:
             # Load property rules for dataflow analysis
             property_rules = load_property_rules()
             self.dataflow_analyzer = DataFlowAnalyzer(self.logger, property_rules)
-            
-            # Load SQL file builder
-            self.db_queries = DBQueries(self.logger)
-            self.sql_file_builder = SQLFileBuilder(self.logger, self.db_queries)
-
         except Exception as e:
             self.logger.critical("Initialization failed: %s", str(e))
             raise
+
+    def _init_db_components(self) -> None:
+        """Initialize database components only when needed."""
+        if self.db_queries is None:
+            try:
+                self.db_queries = DBQueries(self.logger)
+                self.sql_file_builder = SQLFileBuilder(self.logger, self.db_queries)
+            except Exception as e:
+                self.logger.error(f"Database initialization failed: {e}")
+                raise
 
     def run(self) -> None:
         """Main execution flow."""
@@ -110,6 +115,8 @@ class PackageAutoReview:
                 try:
                     self._sql_file_builder(package_data)
                     self.logger.info("SQL file generation completed successfully")
+                except RuntimeError:
+                    self.logger.error("SQL generation aborted. Please fix configuration and retry.")
                 except Exception as e:
                     self.logger.error(f"SQL file generation failed: {e}")
                 finally:
@@ -118,7 +125,9 @@ class PackageAutoReview:
             self.logger.error(f"Workflow failed: {e}")
         finally:
             # Analysis complete - GUI remains open
-            pass
+            if self.file_dialog:
+                # self.file_dialog.run_analysis_button.config(state="normal")
+                self.file_dialog.close_button.config(state="normal")
 
 
     def _analyze_dataflows(self, package_data: dict) -> None:
@@ -151,6 +160,8 @@ class PackageAutoReview:
 
     def _sql_file_builder(self, package_data: dict) -> None:
         """Build a SQL file containing all SQL queries used in the SSIS package."""
+        self._init_db_components()
+
         self.sql_file_builder.sql_query_extractor(package_data)
 
         if self.sql_file_builder.sql_queries:

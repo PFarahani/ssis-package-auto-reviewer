@@ -7,11 +7,13 @@ from config.env_setup import setup_environment
 class DBQueries:
     def __init__(self, logger) -> None:
         self.logger = logger
-        env_file = 'db_credentials.env'
-        if not setup_environment():
-            sys.exit(1)
+        from config.constants import db_config
+        if not db_config._initialized:
+            raise RuntimeError("Database configuration not initialized")
 
-        setup_environment(
+        env_file = 'db_credentials.env'
+
+        if not setup_environment(
             env_file=env_file,
             required_vars=['SQL_SERVER', 'SQL_PORT', 'SQL_DATABASE', 'SQL_USERNAME', 'SQL_PASSWORD'],
             template={
@@ -22,8 +24,10 @@ class DBQueries:
                 'SQL_DATABASE_STAGE': '',
                 'SQL_USERNAME': '',
                 'SQL_PASSWORD': ''
-            }
-        )
+            },
+            logger=self.logger
+        ):
+            raise RuntimeError("Environment setup failed. Please check the configuration.")
 
 
     def get_table_definition(self, table, schema='dbo') -> str:

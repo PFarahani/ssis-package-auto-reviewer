@@ -42,27 +42,38 @@ def setup_environment(
             'SQL_PASSWORD': ''
         }
 
+    file_created = False
     try:
         # Create env file if missing
         if not os.path.exists(env_file):
-            logger.info(f"Creating new environment file: {env_file}")
-            with open(env_file, 'w') as f:
-                for key, value in template.items():
-                    if key.startswith('#'):
-                        f.write(f"{value}\n")
-                    else:
-                        f.write(f"{key}={value}\n")
-            logger.warning(f"Please configure {env_file} before continuing")
-            return False
+            try:
+                logger.info(f"Creating new environment file: {env_file}")
+                with open(env_file, 'w') as f:
+                    for key, value in template.items():
+                        if key.startswith('#'):
+                            f.write(f"# {value}\n")
+                        else:
+                            f.write(f"{key}={value}\n")
+                file_created = True
+                logger.warning(
+                    f"Created new configuration file at {os.path.abspath(env_file)}\n"
+                    "PLEASE EDIT THIS FILE TO ADD YOUR DATABASE CREDENTIALS BEFORE CONTINUING"
+                )
+                return False
+            except IOError as e:
+                logger.error(f"Failed to create {env_file}: {str(e)}")
+                return False
 
         # Load and verify environment
         if not load_dotenv(env_file):
-            logger.error(f"Failed to load {env_file}")
+            logger.error(f"Failed to load {env_file} - file may be corrupted")
             return False
 
         missing = [var for var in required_vars if not os.getenv(var)]
         if missing:
             logger.error(f"Missing required variables: {', '.join(missing)}")
+            if file_created:
+                logger.error("Template was just created. Fill missing values before restarting.")
             return False
 
         logger.debug(f"Environment configured from {env_file}")
@@ -71,21 +82,3 @@ def setup_environment(
     except Exception as e:
         logger.exception(f"Environment setup failed: {str(e)}")
         raise RuntimeError(f"Environment configuration error: {str(e)}")
-
-env_file = 'db_credentials.env'
-setup_environment(
-    env_file=env_file,
-    required_vars=['SQL_SERVER', 'SQL_PORT', 'SQL_DATABASE', 'SQL_DATABASE_STAGE', 'SQL_USERNAME', 'SQL_PASSWORD'],
-    template={
-        '#': 'Database credentials',
-        'SQL_SERVER': '',
-        'SQL_PORT': '1433',
-        'SQL_DATABASE': '',
-        'SQL_DATABASE_STAGE': '',
-        'SQL_USERNAME': '',
-        'SQL_PASSWORD': ''
-    }
-)
-
-DATABASE = os.getenv('SQL_DATABASE')
-DATABASE_STAGE = os.getenv('SQL_DATABASE_STAGE')
