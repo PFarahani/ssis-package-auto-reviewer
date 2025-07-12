@@ -37,7 +37,7 @@ class SQLFileBuilder:
 
             elif component_type == 'Microsoft.Pipeline':
                 pipeline_type = package_data.get('type')
-                if pipeline_type == 'Fact':
+                if pipeline_type == 'FACT':
                     if self._has_property_expression(package_data, key):
                         self._extract_from_variable_expressions(package_data, key)
                     else:
@@ -136,7 +136,7 @@ class SQLFileBuilder:
             for query_name in queries_dict if pattern.match(query_name)
         ]
 
-        include_null_record = (package_data['type'] == 'Dim')
+        include_null_record = (package_data['type'] == 'DIM')
 
         sql_lines = []
 
@@ -178,7 +178,7 @@ class SQLFileBuilder:
                 with open(self.insert_null_script_path, 'r', encoding='utf-16') as f:
                     insull_sql_content = f.read()
                 table_name = package_data['metadata'].get('table_name')
-                insert_null_query = self.db_queries.find_insert_statement(self, insull_sql_content, table_name)
+                insert_null_query = self.db_queries.find_insert_statement(insull_sql_content, table_name)
                 if insert_null_query:
                     sql_lines.append("---------------------------------------------------------------------------")
                     sql_lines.append("-- Insert Record for Null Values")

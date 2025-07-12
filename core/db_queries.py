@@ -117,11 +117,11 @@ class DBQueries:
             for col in columns:
                 col_def = f"\t[{col.ColumnName}] {col.DataType}"
                 # Data types length/precision/scale
-                if col.DataType in ('varchar', 'nvarchar', 'char', 'nchar', 'varbinary'):
+                if col.DataType.lower() in ('varchar', 'nvarchar', 'char', 'nchar', 'varbinary'):
                     col_def += f"({col.Length if col.Length != -1 else 'MAX'})"
-                elif col.DataType in ('decimal', 'numeric'):
+                elif col.DataType.lower() in ('decimal', 'numeric'):
                     col_def += f"({col.Length},{col.Scale})"
-                elif col.DataType in ('datetime2', 'datetimeoffset', 'time'):
+                elif col.DataType.lower() in ('datetime2', 'datetimeoffset', 'time'):
                     col_def += f"({col.Scale})"
                 # NOT NULL
                 col_def += " NOT NULL" if (
