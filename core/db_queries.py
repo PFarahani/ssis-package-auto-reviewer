@@ -113,7 +113,7 @@ class DBQueries:
 
             # Build CREATE TABLE statement
             ddl = f"DROP TABLE IF EXISTS [{schema}].[{table}]\nGO\n"
-            ddl = f"CREATE TABLE [{schema}].[{table}] (\n"
+            ddl += f"CREATE TABLE [{schema}].[{table}] (\n"
             for col in columns:
                 col_def = f"\t[{col.ColumnName}] {col.DataType}"
                 # Data types length/precision/scale
