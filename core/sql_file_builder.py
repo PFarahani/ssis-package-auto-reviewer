@@ -1,6 +1,6 @@
 import os
 from typing import Dict, Optional
-from utils.helpers import get_xpath, beautify_sql_query
+from utils.helpers import get_xpath, beautify_sql_query, resolve_connection_id
 from config.constants import (
     XML_NAMESPACES,
     QUERY_ALIAS_MAP,
@@ -29,7 +29,7 @@ class SQLFileBuilder:
                                  including 'structure', 'tree', and 'type'.
         """
         components = package_data['structure'].get('components', {})
-        
+
         for key, value in components.items():
             component_type = value.get('type')
             if component_type == 'Microsoft.ExecuteSQLTask':
@@ -53,13 +53,22 @@ class SQLFileBuilder:
     def _extract_from_execute_sql_task(self, key: str, value: Dict, package_data: Dict):
         """Extract SQL query from an ExecuteSQLTask component."""
         name = value.get('name')
+        connections_map = package_data['structure'].get('connections', {})
         try:
             sql_query = get_xpath(
                 package_data['tree'].find(key),
                 './/SQLTask:SqlTaskData/@SQLTask:SqlStatementSource',
                 self.namespaces
             )
-            self.sql_queries.append({name: sql_query})
+            # Find DB Name
+            connection_id = get_xpath(
+                package_data['tree'].find(key),
+                './/SQLTask:SqlTaskData/@SQLTask:Connection',
+                self.namespaces
+            )
+            sql_query_db = resolve_connection_id(connection_id, connections_map, logger=self.logger)
+
+            self.sql_queries.append({name: f"USE {sql_query_db}\nGO\n" + sql_query})
         except Exception as e:
             self.logger.error(f"Failed to extract SQL query from '{name}': {e}")
 
@@ -82,6 +91,7 @@ class SQLFileBuilder:
         """Extract SQL queries from SqlCommand property."""
         self.logger.debug("Extracting queries from SQL command property")
         element = package_data['tree'].find(key)
+        connections_map = package_data['structure'].get('connections', {})
         for component in element.xpath('.//component'):
             name = component.get('name')
             sql_element = component.xpath('.//property[@name="SqlCommand"]')
@@ -91,6 +101,7 @@ class SQLFileBuilder:
 
             sql_query = sql_element[0].text or ""
             access_mode = component.xpath('.//property[@name="AccessMode"]')[0].text
+            connection_id = component.xpath('.//connection/@connectionManagerID')[0]
             try:
                 sql_query = sql_query.strip()
                 if (not sql_query) and (access_mode in ('1', '2')):
@@ -101,7 +112,8 @@ class SQLFileBuilder:
                 continue
 
             if access_mode in ('1', '2'):
-                self.sql_queries.append({name: sql_query})
+                sql_query_db = resolve_connection_id(connection_id, connections_map, logger=self.logger)
+                self.sql_queries.append({name: f"USE {sql_query_db}\nGO\n" + sql_query})
 
     def generate_sql_file(self, package_data, queries_dict, output_file_path=None, sort_order=None):
         """
@@ -161,12 +173,9 @@ class SQLFileBuilder:
             for query_name in sorted_queries:
                 self.logger.info(f"Inserting '{query_name}' query...")
                 query_name_alias = self._get_query_alias(query_name, self.query_db_map, self.query_alias_map)
-                db_name = self._get_database_name(query_name, self.query_db_map)
                 # Append DDL statements and original query
                 sql_lines.append("---------------------------------------------------------------------------")
                 sql_lines.append(f"-- '{query_name_alias}'")
-                if db_name:
-                    sql_lines.append(f"USE {db_name}\nGO\n")
                 beautified_query = beautify_sql_query(queries_dict[query_name].strip())
                 sql_lines.append(beautified_query)
                 sql_lines.append("\n")
@@ -204,9 +213,9 @@ class SQLFileBuilder:
                     return query  # Return the original query if no alias is found
         return None
 
-    def _get_database_name(self, query, query_db_map):
-        """Function to get the database name for a query"""
-        for pattern, db_name in query_db_map.items():
-            if pattern.match(query):
-                return db_name  # Return the database name if a match is found
-        return None
+    # def _get_database_name(self, query, query_db_map):
+    #     """Function to get the database name for a query"""
+    #     for pattern, db_name in query_db_map.items():
+    #         if pattern.match(query):
+    #             return db_name  # Return the database name if a match is found
+    #     return None

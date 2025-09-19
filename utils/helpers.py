@@ -251,3 +251,14 @@ def align_equals_signs(sql: str) -> str:
         lines[i] = f"    {lhs.ljust(max_lhs_length)} = {rhs}"
     
     return '\n'.join(lines)
+
+
+def resolve_connection_id(id_str: str, connections_map: dict, logger: logging.Logger) -> str | None:
+    """Resolve a raw {GUID} string to its connection name using the connections_map."""
+    match = re.search(r"\{(.+?)\}", id_str)
+    clean_id = match.group(1) if match else None
+    connections_name = connections_map.get(clean_id) if clean_id else None 
+
+    logger.debug(f"Connection Name: {connections_name}")
+
+    return connections_name

@@ -60,7 +60,8 @@ class SSISProcessor:
             'containers': [],
             'components': {},
             'variables': self._find_variables(root),
-            'parameters': self._find_parameters(root)
+            'parameters': self._find_parameters(root),
+            'connections': self._find_connections(root)
         }
 
         executables = root.find('.//DTS:Executables', self.namespaces)
@@ -92,3 +93,29 @@ class SSISProcessor:
             return [p.attrib for p in root.xpath('.//DTS:PackageParameter', namespaces=self.namespaces)]
         except AttributeError:
             return []
+
+    def _find_connections(self, root) -> dict:
+        """Find and return package connections."""
+        try:
+            connections = root.xpath('.//connections/connection', namespaces=self.namespaces)
+            result = {}
+
+            for conn in connections:
+                conn_id_raw = conn.get("connectionManagerID", "")
+                conn_ref_raw = conn.get("connectionManagerRefId", "")
+
+                # Extract connection ID
+                id_match = re.search(r"\{(.+?)\}", conn_id_raw)
+                conn_id = id_match.group(1) if id_match else None
+
+                # Extract connection name
+                ref_match = re.search(r"\[(.+?)\]", conn_ref_raw)
+                conn_ref = ref_match.group(1) if ref_match else None
+
+                if conn_id and conn_ref:
+                    result[conn_id] = conn_ref
+
+            return result
+
+        except AttributeError:
+            return {}

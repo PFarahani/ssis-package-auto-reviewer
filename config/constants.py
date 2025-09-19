@@ -35,6 +35,10 @@ class _DatabaseConfig:
         """Lazily evaluated mapping that uses current DB values"""
         if not self._initialized:
             raise RuntimeError("Database config not initialized")
+        
+        # TODO:
+        # - Remove the DB Mapping since it is already being handled by connection lookup 
+        
         return {
             re.compile(r"^\bGet\s+Last\s+Value\s+for\s+\w+\b$", re.IGNORECASE): self._database,
             re.compile(r"^\bCreate\s+Table\s+(?:Dim|Fact)\w*Stage\b$", re.IGNORECASE): self._database_stage,
