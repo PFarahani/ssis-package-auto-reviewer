@@ -15,6 +15,7 @@ class FileDialog:
 
     def __init__(self, logger: logging.Logger):
         self.logger = logger
+        self.gui_handler = None
         self.root = self._initialize_root()
         GitHubTheme(self.root)
         GitHubTheme.apply_layout(self.root)
@@ -217,11 +218,16 @@ class FileDialog:
         self.generate_sql = self.generate_sql_var.get()
         self.logger.setLevel(self.log_level.upper())
 
+        # Remove existing GUI handlers
+        for handler in self.logger.handlers[:]:
+            if isinstance(handler, GuiLogHandler):
+                self.logger.removeHandler(handler)
+
         # Custom handler for GUI logging
-        gui_handler = GuiLogHandler(self.log_viewer)
+        self.gui_handler = GuiLogHandler(self.log_viewer)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        gui_handler.setFormatter(formatter)
-        self.logger.addHandler(gui_handler)
+        self.gui_handler.setFormatter(formatter)
+        self.logger.addHandler(self.gui_handler)
 
         # Notify main.py to start processing
         if hasattr(self, 'analysis_callback'):
@@ -238,6 +244,9 @@ class FileDialog:
 
     def cleanup(self) -> None:
         try:
+            # Remove GUI handler if it exists
+            if self.gui_handler:
+                self.logger.removeHandler(self.gui_handler)
             self.root.destroy()
         except tk.TclError:
             pass

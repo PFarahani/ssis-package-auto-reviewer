@@ -4,10 +4,15 @@ from config.constants import LOG_FORMAT, LOG_FILENAME_FORMAT
 
 def configure_logging() -> logging.Logger:
     """Configure and return a logger with file and console handlers."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = LOG_FILENAME_FORMAT.format(timestamp=timestamp)
-    
     logger = logging.getLogger("PackageAutoReview")
+    
+    # Return existing logger if already configured
+    if logger.handlers:
+        return logger
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = LOG_FILENAME_FORMAT.format(timestamp=timestamp)    
+
     logger.setLevel(logging.DEBUG)
 
     # Clear existing handlers
