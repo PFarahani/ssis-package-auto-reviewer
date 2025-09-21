@@ -1,6 +1,7 @@
 import os, sys
 import pyodbc
 import re
+from config.constants import ENV_FILE
 from config.env_setup import setup_environment
 
 
@@ -11,7 +12,7 @@ class DBQueries:
         if not db_config._initialized:
             raise RuntimeError("Database configuration not initialized")
 
-        env_file = 'db_credentials.env'
+        env_file = str(ENV_FILE)
 
         if not setup_environment(
             env_file=env_file,

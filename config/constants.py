@@ -78,6 +78,7 @@ CONFIG_DIR = Path(sys.executable).parent if getattr(sys, 'frozen', False) else P
 RESOURCES_DIR = BASE_DIR / "resources"
 ICON_PATH = RESOURCES_DIR / "favicon.ico"
 RULES_FILE = CONFIG_DIR / "config" / "property_rules.yml"
+ENV_FILE = CONFIG_DIR / "config" / "db_credentials.env"
 
 # Logging configurations
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
