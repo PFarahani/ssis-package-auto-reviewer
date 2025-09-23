@@ -127,32 +127,8 @@ class DBQueries:
                 # NOT NULL
                 col_def += " NOT NULL" if (
                     not col.IsNullable and not col.IsPrimaryKey) else ""
-                # DataCompression
-                if col.IsPrimaryKey and not col.DataCompression:
-                    col_def += f" PRIMARY KEY {col.IndexType}"
-                elif col.IsPrimaryKey and col.DataCompression:
-                    col_def += f" PRIMARY KEY {col.IndexType} WITH (DATA_COMPRESSION = {col.DataCompression})"
-
+                
                 ddl += col_def + ",\n"
-
-            ddl = ddl.rstrip(",\n")
-
-            # Find the matching FileGroupName for the primary key
-            pk_file_group = next(
-                (row[10] for row in columns if row[7]
-                == 'NONCLUSTERED' and row[8] == True),
-                None
-            )
-            # Find the matching DataCompression for the primary key
-            pk_data_compression = next(
-                (row[9] for row in columns if row[7] == 'NONCLUSTERED' and row[8] == True),
-                None
-            )
-
-            # Table's (NONCLUSTERED indexes) FileGroup
-            ddl += f"\n) ON {pk_file_group}" if pk_file_group else "\n)"
-            # Table's (NONCLUSTERED indexes) DataCompression
-            ddl += f" WITH (DATA_COMPRESSION = {pk_data_compression})" if pk_data_compression else ""
 
             # Get indexes
             cursor.execute(f"""
@@ -184,16 +160,31 @@ class DBQueries:
             """)
 
             indexes = cursor.fetchall()
-            found_non_pk = False
-            for idx in indexes:
-                if not idx.IsPrimaryKey:
-                    found_non_pk = True
-                    ddl += f"\nGO\nCREATE {idx.IndexType} INDEX [{idx.IndexName}] ON [{schema}].[{table}] ({idx.KeyColumns})"
-                    ddl += f" WITH (DATA_COMPRESSION = {idx.DataCompression})" if idx.DataCompression else ""
-                    ddl += f" ON {idx.FileGroupName}" if idx.FileGroupName else ""
-                    ddl += "\nGO\n"
-            if not found_non_pk:
-                self.logger.warning(f"Skipped scripting indexes: no eligible indexes found (excluding primary key)")
+            if indexes:
+                for idx in indexes:
+                    expected_format = f"IX_Clustered{table}"
+                    if idx.IsPrimaryKey and idx.IndexName != expected_format:
+                        self.logger.warning(f"Index name '{idx.IndexName}' does not conform to the expected naming pattern '{expected_format}'.")
+                    
+                    ddl += (
+                        f"\n\nCONSTRAINT {idx.IndexName} "
+                        f"{'PRIMARY KEY ' if idx.IsPrimaryKey else ''}"
+                        f"{idx.IndexType} ({idx.KeyColumns})"
+                        f"{' WITH (DATA_COMPRESSION = ' + idx.DataCompression + ')' if idx.DataCompression else ''}"
+                        f"{' ON ' + str(idx.FileGroupName) if idx.FileGroupName and not idx.IsPrimaryKey else ''}"
+                    )
+            else:
+                self.logger.warning(f"Skipped scripting indexes: no eligible indexes found")
+
+
+            # Find the matching FileGroupName for the primary key
+            pk_file_group = next(
+                (row[10] for row in columns if row[8] == True),
+                None
+            )
+            # Table's FileGroup
+            ddl += f"\n) ON {pk_file_group}" if pk_file_group else "\n)"
+
             return ddl
 
         except pyodbc.Error as e:
