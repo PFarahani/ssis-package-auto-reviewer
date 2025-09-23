@@ -165,7 +165,7 @@ class SQLFileBuilder:
             ddl_statements = self.db_queries.get_table_definition(table=package_data['metadata'].get('table_name'), schema='dbo') or ""
             sql_lines.append("---------------------------------------------------------------------------")
             sql_lines.append("-- Create DW Table")
-            sql_lines.append(f"USE {self.datawarehouse}\nGO\n")
+            sql_lines.append(f"USE {self.datawarehouse}\nGO")
             sql_lines.append(beautify_sql_query(ddl_statements))
             sql_lines.append("\n")
             self.logger.info("Table creation DDL insertion completed")
@@ -191,7 +191,7 @@ class SQLFileBuilder:
                 if insert_null_query:
                     sql_lines.append("---------------------------------------------------------------------------")
                     sql_lines.append("-- Insert Record for Null Values")
-                    sql_lines.append(f"USE {self.datawarehouse}\nGO\n")
+                    sql_lines.append(f"USE {self.datawarehouse}\nGO")
                     beautified_query = beautify_sql_query(insert_null_query)
                     sql_lines.append(beautified_query)
                 self.logger.info(f"'Insert Record for Null Values' query insertion completed")

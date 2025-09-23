@@ -132,7 +132,9 @@ def beautify_sql_query(
             elif condition3:
                 output.append(align_column_aliases(statement.value))
             else:
-                output.append(statement.value)
+                output.append(
+                    re.sub(rf'(?i)\b{re.escape('GO')}\s*$', '', statement.value.strip()) + '\nGO'
+                )
 
         output = [query.strip('\n') for query in output]
         return '\n'.join(output)
@@ -148,7 +150,10 @@ def format_create_table(sql: str) -> str:
     if start_idx == -1 or end_idx == -1:
         return sql
     
-    prefix = sql[:start_idx+1]  # includes '('
+    prefix = sql[:start_idx+1].rstrip()  # includes '('
+    # Remove square brackets from schema and table names in the prefix
+    prefix = re.sub(r'\[([^\]]+)\]', r'\1', prefix)
+    
     suffix = sql[end_idx:].strip(' \nGO')  # includes ')' and anything after
     inner = sql[start_idx+1:end_idx]
     
@@ -179,7 +184,7 @@ def format_create_table(sql: str) -> str:
     for col in columns:
         # Handle complex column names (quoted or bracketed)
         if match := re.match(r'^(\[[^\]]+\]|`[^`]+`|"[^"]+"|\w+)\s*(.*)', col, flags=re.DOTALL):
-            col_name = match.group(1)
+            col_name = match.group(1).strip('[]')
             rest = match.group(2).strip()
             col_data.append((col_name, rest))
             max_name_len = max(max_name_len, len(col_name))
@@ -191,6 +196,15 @@ def format_create_table(sql: str) -> str:
         formatted_cols.append(f"    {name.ljust(max_name_len)} {definition}{comma}")
     
     # Reassemble the SQL statement
+    # Remove extra spaces in CONSTRAINT lines
+    formatted_cols = [
+        re.sub(r'CONSTRAINT\s+', 'CONSTRAINT ', line) if line.strip().startswith("CONSTRAINT") else line
+        for line in formatted_cols
+    ]
+    
+    # Add a leading newline before the closing parenthesis
+    suffix = f"\n{suffix}" if suffix.strip() else ""
+
     return f"{prefix}\n" + "\n".join(formatted_cols) + suffix + "\nGO"
 
 
@@ -222,7 +236,7 @@ def align_column_aliases(sql: str) -> str:
     for i, indent, expr, alias in alias_lines:
         lines[i] = f"{(indent + expr).ljust(max_expr_length)} AS {alias}"
     
-    return '\n'.join(lines)
+    return '\n'.join(lines) + "\nGO"
 
 
 def align_equals_signs(sql: str) -> str:
@@ -250,7 +264,7 @@ def align_equals_signs(sql: str) -> str:
     for i, lhs, rhs in assignment_lines:
         lines[i] = f"    {lhs.ljust(max_lhs_length)} = {rhs}"
     
-    return '\n'.join(lines)
+    return '\n'.join(lines) + "\nGO"
 
 
 def resolve_connection_id(id_str: str, connections_map: dict, logger: logging.Logger) -> str | None:
