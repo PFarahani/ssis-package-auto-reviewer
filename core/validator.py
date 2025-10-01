@@ -27,7 +27,7 @@ class PackageValidator:
 
     def _validate_package_structure(self, package_data: Dict, is_incremental: bool) -> None:
         """Validate overall package structure."""
-        expected_containers = PACKAGE_TYPES[package_data['type']]['expected_containers']
+        expected_containers = PACKAGE_TYPES[package_data['package_type']]['expected_containers']
         containers = package_data['structure']['containers']
 
         # Filter out config table check if not incremental

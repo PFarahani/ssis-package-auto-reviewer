@@ -85,10 +85,9 @@ class PackageAutoReview:
 
             # Data processing
             package_data = self.processor.process_package(ssis_path)
-            if package_data['type'] != package_type:
-                self.logger.warning(f"Package type mismatch: Expected {package_type}, got {package_data['type']}")
-                return
-
+            package_data['package_type'] = package_type
+            self.logger.info(f"Table type: {package_data['table_type']} | Package type: {package_data['package_type']}")
+            
             # Validation
             self.logger.info("Starting package validation...")
             try:

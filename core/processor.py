@@ -4,12 +4,12 @@ from datetime import datetime
 from pathlib import Path
 from config.constants import (
     XML_NAMESPACES,
-    PACKAGE_TYPES
+    TABLE_TYPES
 )
 from utils.helpers import (
     validate_pattern,
     get_xpath,
-    detect_package_type
+    table_type_by_ssis_prefix
 )
 import re
 
@@ -27,13 +27,13 @@ class SSISProcessor:
         root = tree.getroot()
 
         package_name = get_xpath(root, '@DTS:ObjectName', self.namespaces)
-        self.package_type = detect_package_type(package_name, self.logger)
+        self.package_type = table_type_by_ssis_prefix(package_name, self.logger)
 
         return {
             'metadata': self._extract_package_metadata(root),
             'structure': self._analyze_package_structure(root),
             'tree': tree,
-            'type': self.package_type
+            'table_type': self.package_type
         }
 
     def _extract_package_metadata(self, root) -> Dict[str, str]:
@@ -47,7 +47,7 @@ class SSISProcessor:
         }
 
         self.logger.info("Validating package name")
-        pattern = PACKAGE_TYPES[self.package_type]['name_pattern']
+        pattern = TABLE_TYPES[self.package_type]['name_pattern']
         validate_pattern(
             metadata['name'],
             [re.compile(pattern)],

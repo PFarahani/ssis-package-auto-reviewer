@@ -148,7 +148,7 @@ class SQLFileBuilder:
             for query_name in queries_dict if pattern.match(query_name)
         ]
 
-        include_null_record = (package_data['type'] == 'DIM')
+        include_null_record = (package_data['table_type'] == 'DIM')
 
         sql_lines = []
 

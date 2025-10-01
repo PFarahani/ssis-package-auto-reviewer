@@ -66,7 +66,7 @@ def validate_container_structure(containers: List[str], logger: logging.Logger) 
     return True
 
 
-def detect_package_type(package_name: str, logger: logging.Logger) -> str:
+def table_type_by_ssis_prefix(package_name: str, logger: logging.Logger) -> str:
     """Detect if package is DIM or FACT based on naming convention."""
     if package_name.startswith('Fill_Dim'):
         logger.info("Detected DIMENSION package type")

@@ -19,7 +19,7 @@ class FileDialog:
         self.root = self._initialize_root()
         GitHubTheme(self.root)
         GitHubTheme.apply_layout(self.root)
-        self.package_type = "DIM"
+        self.package_type = "Full Load"
         self.sql_path: Optional[Path] = None
         self.ssis_path: Optional[Path] = None
         self.log_level = "WARNING"
@@ -68,7 +68,7 @@ class FileDialog:
         # Package Type
         self.pkg_combobox_label = ttk.Label(main_frame, text="Package Type")
         self.pkg_combobox_label.grid(row=1, column=0, sticky="w", pady=4)
-        self.pkg_combobox = ttk.Combobox(main_frame, values=["DIM", "FACT"], state="readonly")
+        self.pkg_combobox = ttk.Combobox(main_frame, values=["Full Load", "Incremental"], state="readonly")
         self.pkg_combobox.current(0)
         self.pkg_combobox.grid(row=1, column=1, columnspan=2, sticky="ew", pady=4)
 
