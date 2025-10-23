@@ -12,6 +12,9 @@ class DataFlowAnalyzer:
         """Analyze data flow components in pipeline."""
         self.logger.info("Starting data flow analysis")
         
+        if pipeline_element.get("autoAdjustBufferSize") != 'true':
+            self.logger.warning("'AutoAdjustBufferSize' not enabled")
+
         components = pipeline_element.find('.//components')
         if components is None:
             self.logger.warning("No components found in pipeline")
