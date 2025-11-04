@@ -133,7 +133,7 @@ def beautify_sql_query(
                 output.append(align_column_aliases(statement.value))
             else:
                 output.append(
-                    re.sub(rf'(?i)\b{re.escape('GO')}\s*$', '', statement.value.strip()) + '\nGO'
+                    re.sub(r'(?i)\b' + re.escape('GO') + r'\s*$', '', statement.value.strip()) + '\nGO'
                 )
 
         output = [query.strip('\n') for query in output]
