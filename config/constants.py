@@ -89,8 +89,17 @@ SSIS_FILE_TYPES = [("SSIS Package files", "*.dtsx")]
 SQL_FILE_TYPES = [("SQL files", "*.sql")]
 
 # Validation patterns
-PACKAGE_DIMENSION_NAME_PATTERNS = [re.compile(r"^Fill_Dim\w+$")]
-PACKAGE_FACT_NAME_PATTERNS = [re.compile(r"^Fill_Fact\w+$")]
+# PACKAGE_DIMENSION_NAME_PATTERNS = []
+# PACKAGE_FACT_NAME_PATTERNS = []
+TABLE_TYPES = {
+    'DIM' : {
+        'name_pattern' : re.compile(r"^Fill_Dim\w+$")
+    },
+    'FACT' : {
+        'name_pattern' : re.compile(r"^Fill_Fact\w+$")
+    }
+}
+
 FRAMEWORK_CONTAINERS = [
     re.compile(r"Stage.*Initialization"),
     re.compile(r"Extract.*Transform.*OLTP"),
@@ -100,9 +109,7 @@ FRAMEWORK_CONTAINERS = [
 
 # Specific patterns for each package type
 PACKAGE_TYPES = {
-    'DIM': {
-        'prefix': 'Fill_Dim',
-        'name_pattern': r"^Fill_Dim\w+$",
+    'Full Load': {
         'expected_containers': [
             r"Stage.*Initialization",
             r"Extract.*Transform.*OLTP",
@@ -110,9 +117,7 @@ PACKAGE_TYPES = {
             r"Update.*Config.*Table.*Insert.*Log"
         ]
     },
-    'FACT': {
-        'prefix': 'Fill_Fact',
-        'name_pattern': r"^Fill_Fact\w+$",
+    'Incremental': {
         'expected_containers': [
             r"Get.*Record.*Config.*Table",
             r"Stage.*Initialization",
